@@ -1,0 +1,103 @@
+
+services:
+  db:
+    hostname: db
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=core
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - /var/lib/postgresql/data/
+
+  redis:
+    image: redis:alpine
+    restart: on-failure
+    ports:
+      - "6379"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=core_application.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/core
+      - CACHE_LOCATION=redis://redis:6379/2
+    command: ./wait-for-it.sh db:5432 -- python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    links:
+      - db
+      - redis
+    depends_on:
+      - migration
+      - db
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_CONFIGURATION=Testing
+      - DJANGO_SETTINGS_MODULE=core_application.settings
+    command: poetry run pytest
+
+
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=core_application.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/core
+      - CACHE_LOCATION=redis://redis:6379/2
+    command: python manage.py migrate --noinput
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+
+  celery:
+    restart: always
+    build: .
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=core_application.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/core
+      - CACHE_LOCATION=redis://redis:6379/2
+    command: [ "celery", "-A", "core_application", "worker", "-l", "INFO" ]
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
+  flower:
+    container_name: flower
+    build: .
+    command: celery -A core_application flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=core_application.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/core
+      - CACHE_LOCATION=redis://redis:6379/2
+    depends_on:
+      - redis
+      - celery

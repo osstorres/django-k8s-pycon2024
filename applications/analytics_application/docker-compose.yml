@@ -1,0 +1,67 @@
+
+services:
+  db:
+    hostname: db
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=analytics
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - /var/lib/postgresql/data/
+
+  redis:
+    image: redis:alpine
+    restart: on-failure
+    ports:
+      - "6379"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=analytics_application.settings
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/analytics
+      - CACHE_LOCATION=redis://redis:6379/2
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/app
+    links:
+      - db
+      - redis
+    depends_on:
+      - migration
+      - db
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_CONFIGURATION=Testing
+      - DJANGO_SETTINGS_MODULE=analytics_application.settings
+    command: poetry run pytest
+
+
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=analytics_application.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/analytics
+      - CACHE_LOCATION=redis://redis:6379/2
+    command: python manage.py migrate --noinput
+    volumes:
+      - .:/app
+    depends_on:
+      - db
