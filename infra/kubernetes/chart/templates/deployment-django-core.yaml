@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-deployment
+  namespace: default
+spec:
+  replicas: {{ .Values.core.replicas }}
+  selector:
+    matchLabels:
+      app: core
+  template:
+    metadata:
+      labels:
+        app: core
+    spec:
+      serviceAccountName: secrets-manager-access-sa
+      volumes:
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: aws-secrets
+      containers:
+      - name: core
+        image: {{ .Values.core.image }}
+        ports:
+        - containerPort: 8000
+        env:
+          - name: DJANGO_CONFIGURATION
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: DJANGO_CONFIGURATION
+          - name: DJANGO_CELERY_BROKER_URL
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: DJANGO_CELERY_BROKER_URL
+          - name: DJANGO_CELERY_RESULT_BACKEND
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: DJANGO_CELERY_RESULT_BACKEND
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: DATABASE_URL
+          - name: CACHE_LOCATION
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: CACHE_LOCATION
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1024Mi"
+            cpu: "800m"
+        volumeMounts:
+        - name: secrets-store-inline
+          mountPath: "/mnt/secrets-store"
+          readOnly: true

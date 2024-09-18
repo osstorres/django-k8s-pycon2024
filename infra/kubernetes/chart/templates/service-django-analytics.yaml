@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-service
+  namespace: default
+spec:
+  type: {{ .Values.analyticsservice.type }}
+  selector:
+    app: analytics
+  ports:
+  - protocol: TCP
+    port: {{ .Values.analyticsservice.port }}
+    targetPort: 8001
