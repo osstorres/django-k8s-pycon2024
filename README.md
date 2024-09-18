@@ -183,8 +183,51 @@ Finalmente, despliega las aplicaciones Django y los servicios asociados usando l
 helm install release-1 chart
 ```
 
-Con esto, las aplicaciones estarán desplegadas y accesibles a través de Nginx en tu clúster de Kubernetes.
+Con esto, las aplicaciones estarán desplegadas y accesibles a través de Nginx en tu clúster de Kubernetes y podrás consultarlo en la consola de AWS a través de ALB.
 
 
+### Hosting
 
+Dentro del archivo `infra/kubernetes/chart/templates/ingress.yaml` se encuentran configurados los hosts a ambos servicios  
+de Django, aquí puedes agregar los dominios para cada servicio. Si usas Route53 es necesario asignar un alias al ALB de la aplicación.
+
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-service
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+
+spec:
+  tls:
+    - hosts:
+        - subdomain1.mydomain.com
+        - subdomain2.mydomain.com
+      secretName: cert-manager-webhook-ca
+  rules:
+    - host: subdomain1.mydomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: core-service
+                port:
+                  number: 8000
+    - host: subdomain2.mydomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: analytics-service
+                port:
+                  number: 8001
+
+```
 
