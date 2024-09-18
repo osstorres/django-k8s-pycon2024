@@ -1,0 +1,44 @@
+core:
+  image: account_id.dkr.ecr.us-west-2.amazonaws.com/core-application
+  replicas: 2
+
+analytics:
+  image: account_id.dkr.ecr.us-west-2.amazonaws.com/analytics-application
+  replicas: 2
+
+celery:
+  image: account_id.dkr.ecr.us-west-2.amazonaws.com/core-application
+  replicas: 1
+
+celeryBeat:
+  image: account_id.dkr.ecr.us-west-2.amazonaws.com/core-application
+  replicas: 1
+
+coreservice:
+  type: NodePort
+  port: 8000
+
+analyticsservice:
+  type: NodePort
+  port: 8001
+
+
+ingress:
+  enabled: true
+  host: osstorresk8s.com
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+hpacore:
+  minReplicas: 2
+  maxReplicas: 6
+  cpuUtilization: 60
+
+hpaanalytics:
+  minReplicas: 1
+  maxReplicas: 4
+  cpuUtilization: 70
+

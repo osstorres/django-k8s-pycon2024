@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat-deployment
+  namespace: default
+spec:
+  replicas: {{ .Values.celeryBeat.replicas }}
+  selector:
+    matchLabels:
+      app: celery-beat
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+    spec:
+      serviceAccountName: secrets-manager-access-sa
+      volumes:
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: aws-secrets
+      containers:
+      - name: celery-beat
+        image: {{ .Values.celeryBeat.image }}
+        command: ["celery", "-A", "core_application", "beat", "--loglevel=info"]
+        env:
+          - name: DJANGO_CONFIGURATION
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: DJANGO_CONFIGURATION
+          - name: DJANGO_CELERY_BROKER_URL
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: DJANGO_CELERY_BROKER_URL
+          - name: DJANGO_CELERY_RESULT_BACKEND
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: DJANGO_CELERY_RESULT_BACKEND
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: DATABASE_URL
+          - name: CACHE_LOCATION
+            valueFrom:
+              secretKeyRef:
+                name: application-secrets
+                key: CACHE_LOCATION
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "100m"
+          limits:
+            memory: "200Mi"
+            cpu: "300m"
+        volumeMounts:
+        - name: secrets-store-inline
+          mountPath: "/mnt/secrets-store"
+          readOnly: true

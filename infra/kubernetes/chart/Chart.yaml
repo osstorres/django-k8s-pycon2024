@@ -1,0 +1,4 @@
+apiVersion: v2
+name: main-chart
+description: A Helm chart for deploying Core app, Analytics app, Celery, and Celery Beat
+version: 1.0.0
