@@ -63,8 +63,9 @@ terraform apply
 
 ## ⚓ 2. Creación del clúster de Kubernetes con `eksctl`
 
-Una vez lista la infraestructura, obtenemos la VPC, redes públicas, privadas y conexiones a bases de datos, las cuales almacenaremos en los secrets crearemos el clúster EKS con el archivo `infra/kubernetes/01-eksctl-managed-nodes.yaml`, configurando las variables generadas previamente:
+Una vez lista la infraestructura, obtenemos la VPC, redes públicas, privadas y conexiones a bases de datos, las cuales almacenaremos en los secrets. Crearemos el clúster EKS con el archivo `infra/kubernetes/01-eksctl-managed-nodes.yaml`, configurando las variables generadas previamente:  
 
+Nota: Establece una contraseña segura para tu base de datos en `infra/terraform/envs/dev/main.tf:8`
 
 
 ```
@@ -86,7 +87,7 @@ Una vez lista la infraestructura, obtenemos la VPC, redes públicas, privadas y 
 Para crear el clúster de Kubernetes, utiliza el siguiente comando de `eksctl`:
 
 ```bash
-eksctl create cluster -f infra/kubernetes/01-eksctl-managed-nodes.yaml
+eksctl create cluster -f infra/kubernetes/eks-managed-nodes.yaml
 ```
 
 Este proceso tomará aproximadamente 15 minutos. Una vez finalizada la creación del clúster, puedes verificar su estado ejecutando:
@@ -106,7 +107,7 @@ una base de datos, y los secrets configurados, listos para ser consumidos por la
 Una vez creado el clúster, el siguiente paso es desplegar nuestras aplicaciones. Para ello, utilizaremos Helm,  
 pero antes debemos instalar algunos paquetes necesarios para la visualización y exposición de nuestro clúster.
 
-### Instalación del servidor de métricas (Metrics Server)
+### Instalación del servidor de métricas (Metrics Server and prometheus)
 El servidor de métricas te permitirá monitorear el uso de recursos como CPU y memoria en tiempo real dentro del clúster.  
 
 Para instalarlo, ejecuta el siguiente comando:
@@ -126,7 +127,8 @@ Valida la instalación con el siguiente comando (el despliegue tardará algunos 
 kubectl get deployment metrics-server -n kube-system
 ```
 
-### Subida de imágenes Docker a ECR
+### 🐋 Build de aplicaciones (ECR)
+
 A continuación, sube las imágenes Docker de tus aplicaciones a los repositorios ECR (Elastic Container Registry) de AWS:
 
 ```
@@ -137,7 +139,7 @@ docker push account.dkr.ecr.us-west-2.amazonaws.com/core-application:latest
 También puedes hacer uso del CI/CD que contiene el proyecto para empaquetar de manera automatica los cambios de las aplicaciones en cada deploy
 
 
-### Manejo de secrets en Kubernetes
+### 🔒 Manejo de secrets en Kubernetes
 
 Para consumir secretos de manera segura en Kubernetes, utilizamos el CSI Driver y AWS Secrets Manager.
 
@@ -168,7 +170,7 @@ helm install cert-manager jetstack/cert-manager --namespace cert-manager --creat
 ```
 
 
-### Exponer las aplicaciones con Nginx
+### 🌐 Exponer las aplicaciones con Nginx
 Para exponer las aplicaciones al exterior, utilizamos Nginx como controlador de ingreso (ingress). Instálalo usando Helm:
 
 ```
@@ -176,7 +178,7 @@ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --namespace ingress-nginx --create-namespace
 ```
 
-### Despliegue de las aplicaciones
+### 🚀 Despliegue de las aplicaciones
 Finalmente, despliega las aplicaciones Django y los servicios asociados usando los siguientes comandos:
 
 ```
@@ -186,7 +188,7 @@ helm install release-1 chart
 Con esto, las aplicaciones estarán desplegadas y accesibles a través de Nginx en tu clúster de Kubernetes y podrás consultarlo en la consola de AWS a través de ALB.
 
 
-### Hosting
+### ☁ Hosting
 
 Dentro del archivo `infra/kubernetes/chart/templates/ingress.yaml` se encuentran configurados los hosts a ambos servicios  
 de Django, aquí puedes agregar los dominios para cada servicio. Si usas Route53 es necesario asignar un alias al ALB de la aplicación.
