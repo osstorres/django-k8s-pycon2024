@@ -1,18 +1,25 @@
 core:
   image: account_id.dkr.ecr.us-west-2.amazonaws.com/core-application
   replicas: 2
+  pullPolicy: Always
+
 
 analytics:
   image: account_id.dkr.ecr.us-west-2.amazonaws.com/analytics-application
   replicas: 2
+  pullPolicy: Always
 
 celery:
   image: account_id.dkr.ecr.us-west-2.amazonaws.com/core-application
   replicas: 1
+  pullPolicy: Always
+
 
 celeryBeat:
   image: account_id.dkr.ecr.us-west-2.amazonaws.com/core-application
   replicas: 1
+  pullPolicy: Always
+
 
 coreservice:
   type: NodePort
