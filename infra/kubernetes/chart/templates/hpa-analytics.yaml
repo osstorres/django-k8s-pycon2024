@@ -10,10 +10,4 @@ spec:
     name: analytics-deployment
   minReplicas: {{ .Values.hpaanalytics.minReplicas }}
   maxReplicas: {{ .Values.hpaanalytics.maxReplicas }}
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: {{ .Values.hpaanalytics.cpuUtilization }}
+  targetCPUUtilizationPercentage: {{ .Values.hpaanalytics.cpuUtilization }}

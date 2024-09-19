@@ -85,6 +85,22 @@ services:
     depends_on:
       - redis
 
+  beat:
+    restart: always
+    build: .
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=core_application.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/core
+      - CACHE_LOCATION=redis://redis:6379/2
+    command: [ "celery", "-A", "core_application", "beat", "-l", "INFO" ]
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
   flower:
     container_name: flower
     build: .
