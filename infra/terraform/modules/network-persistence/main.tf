@@ -186,8 +186,8 @@ resource "aws_security_group" "redis_security_group" {
   vpc_id = aws_vpc.core_vpc.id
 
   ingress {
-    from_port       = 11211
-    to_port         = 11211
+    from_port       = 6379
+    to_port         = 6379
     protocol        = "tcp"
     security_groups = [aws_security_group.eks_nodes.id]
   }

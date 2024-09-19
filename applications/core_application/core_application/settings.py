@@ -188,6 +188,13 @@ class Dev(Base):
     ALLOWED_HOSTS = ["*"]
     DEBUG = False
 
+    CELERY_BEAT_SCHEDULE = {
+        'hello_task': {
+            'task': 'hello.tasks.hello_task',
+            'schedule': 5.0,  # Every 5 seconds
+        },
+    }
+
 
 class Testing(Dev):
 

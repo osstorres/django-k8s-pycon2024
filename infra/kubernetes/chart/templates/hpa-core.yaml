@@ -10,10 +10,4 @@ spec:
     name: core-deployment
   minReplicas: {{ .Values.hpacore.minReplicas }}
   maxReplicas: {{ .Values.hpacore.maxReplicas }}
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: {{ .Values.hpacore.cpuUtilization }}
+  targetCPUUtilizationPercentage: {{ .Values.hpacore.cpuUtilization }}

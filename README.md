@@ -117,7 +117,7 @@ helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install metrics-server metrics-server/metrics-server           
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm upgrade --install prometheus prometheus-community/prometheus
+helm upgrade --install prometheus prometheus-community/kube-prometheus-stack
 
 ```
 
